@@ -1,5 +1,6 @@
 const { pool } = require('../dbConfig')
 const { isEmail, isStrongPassword } = require('validator')
+const bcrypt = require('bcrypt')
 
 let errors = []
 const checkCredentials = (email, password) => {
@@ -8,14 +9,13 @@ const checkCredentials = (email, password) => {
     errors.push({ message: "Please enter a valid email" })
   }
 
-  // Options for password strength (customize as needed)
   const options = {
-    minLength: 3,          // Minimum length of the password
-    minLowercase: 0,       // Minimum number of lowercase characters
-    minUppercase: 0,       // Minimum number of uppercase characters
-    minNumbers: 1,         // Minimum number of numeric characters
-    minSymbols: 0,         // Minimum number of special characters
-    returnScore: false,    // If true, returns an object with a score property
+    minLength: 3,         
+    minLowercase: 0,     
+    minUppercase: 0,    
+    minNumbers: 1,       
+    minSymbols: 0,        
+    returnScore: false
   };
 
   if (!isStrongPassword(password, options)) {
@@ -34,8 +34,9 @@ module.exports.signup_post = async (req, res) => {
   checkCredentials(email, password)
 
   if (errors.length == 0) {
+    const hashedPassword = await bcrypt.hash(password, 10)
     try {
-      const newUser = await pool.query('INSERT INTO users (email, password) VALUES ($1, $2) RETURNING *', [email, password])
+      const newUser = await pool.query('INSERT INTO users (email, password) VALUES ($1, $2) RETURNING *', [email, hashedPassword])
       res.status(201).json(newUser.rows[0])
 
     } catch (error) {
