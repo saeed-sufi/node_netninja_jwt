@@ -1,5 +1,6 @@
 const { pool } = require('../dbConfig')
 const { isEmail, isStrongPassword } = require('validator')
+const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 
 let errors = []
@@ -10,11 +11,11 @@ const checkCredentials = (email, password) => {
   }
 
   const options = {
-    minLength: 3,         
-    minLowercase: 0,     
-    minUppercase: 0,    
-    minNumbers: 1,       
-    minSymbols: 0,        
+    minLength: 3,
+    minLowercase: 0,
+    minUppercase: 0,
+    minNumbers: 1,
+    minSymbols: 0,
     returnScore: false
   };
 
@@ -22,7 +23,12 @@ const checkCredentials = (email, password) => {
     errors.push({ message: "Password is not strong enough." })
   }
 }
-
+const maxAge = 3 * 24 * 60 * 60
+const createToken = (id) => {
+  return jwt.sign({ id }, 'net ninja saeed pass', {
+    expiresIn: maxAge
+  })
+}
 module.exports.signup_get = (req, res) => {
   res.render('signup')
 }
@@ -37,13 +43,16 @@ module.exports.signup_post = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10)
     try {
       const newUser = await pool.query('INSERT INTO users (email, password) VALUES ($1, $2) RETURNING *', [email, hashedPassword])
-      res.status(201).json(newUser.rows[0])
+      const token = createToken(newUser.rows[0].id)
+      res.cookie('jwt', token, { httpOnly: true, maxAge: maxAge * 1000})
+      res.status(201).json(newUser.rows[0].id)
 
     } catch (error) {
-      errors.push({message: "User registration failed!"})
+      errors.push({ message: "User registration failed!" })
       res.status(400).send(errors)
     }
   } else {
+    console.log(errors)
     res.status(400).send(errors)
   }
 }
