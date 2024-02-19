@@ -64,10 +64,10 @@ module.exports.login_post = async (req, res) => {
     const token = createToken(user.rows[0].id)
     res.cookie('jwt', token, { httpOnly: true, maxAge: maxAge * 1000 })
     res.status(200).json({ user: user.rows[0].id })
-    
+
   } catch (err) {
     res.status(400).send('erororrororor')
-  } 
+  }
 }
 
 
@@ -79,11 +79,16 @@ const loginCheck = async (email, password) => {
   const user = await pool.query('SELECT id, password FROM USERS WHERE email = $1', [email])
   if (user.rows.length) {
     if (await isPasswordCorrect(user, password)) {
-      return user   
+      return user
     } else {
       throw Error('Password is incorrect.')
     }
   } else {
     throw Error('User does not exist.')
   }
+}
+
+module.exports.logout_get = (req, res) => {
+  res.cookie('jwt', '', {maxAge: 1})
+  res.redirect('/')
 }
