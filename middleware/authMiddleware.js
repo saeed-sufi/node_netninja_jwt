@@ -9,7 +9,6 @@ const requireAuth = (req, res, next) => {
       if (err) {
         console.log(err.message)
         res.redirect('/login')
-
       } else {
         next()
       }
@@ -29,7 +28,7 @@ const checkUser = (req, res, next) => {
         res.locals.user = null
         next()
       } else {
-        const user = await pool.query('SELECT id, email FROM users WHERE id = $1', [decodedToken.id])
+        const user = await pool.query('SELECT email FROM users WHERE id = $1', [decodedToken.id])
         res.locals.user = user.rows[0]
         next()
       }

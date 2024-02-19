@@ -10,7 +10,7 @@ const checkCredentials = (email, password) => {
     errors.push({ message: "Please enter a valid email" })
   }
 
-  const options = {
+  const passwordOptions = {
     minLength: 3,
     minLowercase: 0,
     minUppercase: 0,
@@ -19,7 +19,7 @@ const checkCredentials = (email, password) => {
     returnScore: false
   };
 
-  if (!isStrongPassword(password, options)) {
+  if (!isStrongPassword(password, passwordOptions)) {
     errors.push({ message: "Password is not strong enough." })
   }
 }
@@ -43,7 +43,7 @@ module.exports.signup_post = async (req, res) => {
   if (errors.length == 0) {
     const hashedPassword = await bcrypt.hash(password, 10)
     try {
-      const newUser = await pool.query('INSERT INTO users (email, password) VALUES ($1, $2) RETURNING *', [email, hashedPassword])
+      const newUser = await pool.query('INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id', [email, hashedPassword])
       const token = createToken(newUser.rows[0].id)
       res.cookie('jwt', token, { httpOnly: true, maxAge: maxAge * 1000 })
       res.status(201).json(newUser.rows[0].id)
@@ -70,7 +70,6 @@ module.exports.login_post = async (req, res) => {
   }
 }
 
-
 const isPasswordCorrect = async (user, password) => {
   return await bcrypt.compare(password, user.rows[0].password)
 }
@@ -89,6 +88,6 @@ const loginCheck = async (email, password) => {
 }
 
 module.exports.logout_get = (req, res) => {
-  res.cookie('jwt', '', {maxAge: 1})
+  res.cookie('jwt', '', { maxAge: 1 })
   res.redirect('/')
 }
