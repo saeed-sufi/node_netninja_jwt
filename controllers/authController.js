@@ -29,6 +29,7 @@ const createToken = (id) => {
     expiresIn: maxAge
   })
 }
+
 module.exports.signup_get = (req, res) => {
   res.render('signup')
 }
@@ -44,7 +45,7 @@ module.exports.signup_post = async (req, res) => {
     try {
       const newUser = await pool.query('INSERT INTO users (email, password) VALUES ($1, $2) RETURNING *', [email, hashedPassword])
       const token = createToken(newUser.rows[0].id)
-      res.cookie('jwt', token, { httpOnly: true, maxAge: maxAge * 1000})
+      res.cookie('jwt', token, { httpOnly: true, maxAge: maxAge * 1000 })
       res.status(201).json(newUser.rows[0].id)
 
     } catch (error) {
@@ -52,11 +53,37 @@ module.exports.signup_post = async (req, res) => {
       res.status(400).send(errors)
     }
   } else {
-    console.log(errors)
     res.status(400).send(errors)
   }
 }
-module.exports.login_post = (req, res) => {
+module.exports.login_post = async (req, res) => {
   const { email, password } = req.body
-  res.send('user login_post')
+
+  try {
+    const user = await loginCheck(email, password)
+    const token = createToken(user.rows[0].id)
+    res.cookie('jwt', token, { httpOnly: true, maxAge: maxAge * 1000 })
+    res.status(200).json({ user: user.rows[0].id })
+    
+  } catch (err) {
+    res.status(400).send('erororrororor')
+  } 
+}
+
+
+const isPasswordCorrect = async (user, password) => {
+  return await bcrypt.compare(password, user.rows[0].password)
+}
+
+const loginCheck = async (email, password) => {
+  const user = await pool.query('SELECT id, password FROM USERS WHERE email = $1', [email])
+  if (user.rows.length) {
+    if (await isPasswordCorrect(user, password)) {
+      return user   
+    } else {
+      throw Error('Password is incorrect.')
+    }
+  } else {
+    throw Error('User does not exist.')
+  }
 }

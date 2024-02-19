@@ -2,6 +2,7 @@ const express = require('express');
 const authRoutes = require('./routes/authRoutes')
 const { pool, createStoreTable } = require('./dbConfig')
 const cookieParser = require('cookie-parser')
+const {requireAuth}= require('./middleware/authMiddleware')
 const app = express();
 
 // middleware
@@ -22,5 +23,5 @@ pool.connect((err, data) => {
 })
 // routes
 app.get('/', (req, res) => res.render('home'));
-app.get('/smoothies', (req, res) => res.render('smoothies'));
+app.get('/smoothies', requireAuth, (req, res) => res.render('smoothies'));
 app.use(authRoutes)
